@@ -1,0 +1,26 @@
+[
+  {
+    "id": "12k-cool",
+    "retailer": "Meaco direct",
+    "model": "Meaco Cirro 12000 BTU (cooling only)",
+    "product_url": "https://meaco.com/products/meaco-cirro-12000-btu-super-quiet-smart-portable-air-conditioner",
+    "endpoint": "https://meaco.com/products/meaco-cirro-12000-btu-super-quiet-smart-portable-air-conditioner.js",
+    "variant_ids": [58102727246211]
+  },
+  {
+    "id": "14k-cool",
+    "retailer": "Meaco direct",
+    "model": "Meaco Cirro+ 14000 BTU (cooling only)",
+    "product_url": "https://meaco.com/products/meaco-cirro-14000-btu-super-quiet-inverter-smart-portable-air-conditioner",
+    "endpoint": "https://meaco.com/products/meaco-cirro-14000-btu-super-quiet-inverter-smart-portable-air-conditioner.js",
+    "variant_ids": [58103889953155]
+  },
+  {
+    "id": "14k-heat",
+    "retailer": "Meaco direct",
+    "model": "Meaco Cirro+ 14000 BTU (cooling + heating)",
+    "product_url": "https://meaco.com/products/meaco-cirro-14000-btu-super-quiet-inverter-smart-portable-air-conditioner-heater",
+    "endpoint": "https://meaco.com/products/meaco-cirro-14000-btu-super-quiet-inverter-smart-portable-air-conditioner-heater.js",
+    "variant_ids": [58103896637827]
+  }
+]
