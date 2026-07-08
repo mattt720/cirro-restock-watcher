@@ -1,1 +1,28 @@
-{"schema_version":1,"targets":{}}
+{
+  "schema_version": 1,
+  "last_run": "2026-07-08T23:20:22.787462+00:00",
+  "last_heartbeat_date": null,
+  "targets": {
+    "12k-cool": {
+      "state": "out",
+      "last_known_stock_state": "out",
+      "consecutive_failures": 0,
+      "last_alert_ts": null,
+      "degraded_alerted_ts": null
+    },
+    "14k-cool": {
+      "state": "out",
+      "last_known_stock_state": "out",
+      "consecutive_failures": 0,
+      "last_alert_ts": null,
+      "degraded_alerted_ts": null
+    },
+    "14k-heat": {
+      "state": "out",
+      "last_known_stock_state": "out",
+      "consecutive_failures": 0,
+      "last_alert_ts": null,
+      "degraded_alerted_ts": null
+    }
+  }
+}
