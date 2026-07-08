@@ -1,0 +1,65 @@
+# The scheduled watcher (SPEC.md Phase 4). Every run commits state to the
+# `state` branch — that commit also resets GitHub's 60-day scheduled-workflow
+# disablement timer, so it is load-bearing: a run that cannot commit must fail
+# loudly, never silently skip.
+name: watch
+
+"on":
+  schedule:
+    - cron: "4-59/5 * * * *" # every 5 min, offset from the :00/:05 scheduler spikes
+  workflow_dispatch:
+    inputs:
+      self_test:
+        description: "Send test alerts on both channels and schedule an unrefreshed 2-minute dead-man's-switch"
+        type: boolean
+        default: false
+
+concurrency:
+  group: watcher
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+
+      - name: Check out state branch
+        uses: actions/checkout@v4
+        with:
+          ref: state
+          path: .state
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Self-test notification channels
+        if: ${{ inputs.self_test }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python -m watcher --self-test
+
+      - name: Run watcher
+        if: ${{ !inputs.self_test }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          COMMIT_MESSAGE_FILE: ${{ github.workspace }}/commit-message.txt
+        run: python -m watcher
+
+      - name: Commit state
+        if: ${{ !inputs.self_test }}
+        working-directory: .state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state.json
+          git commit -F "$GITHUB_WORKSPACE/commit-message.txt"
+          git push origin HEAD:state
