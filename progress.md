@@ -3,15 +3,15 @@
 > Session handoff doc. Delete during Phase 5 repo polish.
 > Normative design: `SPEC.md`. Durable invariants: `CLAUDE.md`. This file is only "where we are".
 
-## Status: Phases 0–2 complete ✅ — next up is Phase 3 (notifications)
+## Status: Phases 0–3 complete ✅ — next up is Phase 4 (orchestration)
 
 | Phase | State | Evidence |
 |-------|-------|----------|
 | 0 — Scaffold | ✅ done | commit `85380d2` |
 | 1 — Probe + HUMAN GATE | ✅ passed 2026-07-05 | Actions run 28755447239 green; commits `08e8da9`, `e22659a` |
 | 2 — Core logic | ✅ done | commit `23f0e79`; 72 tests green, ruff clean |
-| 3 — Notifications | ⬜ next | see "Next steps" below |
-| 4 — Orchestration + watch.yml + state branch | ⬜ | |
+| 3 — Notifications | ✅ done 2026-07-08 | 126 tests green, ruff clean; live self-test deferred (see below) |
+| 4 — Orchestration + watch.yml + state branch | ⬜ next | see "Next steps" below |
 | 5 — README/docs polish | ⬜ | |
 
 Repo: https://github.com/mattt720/cirro-restock-watcher (public, `main` up to date with local).
@@ -31,13 +31,22 @@ Repo: https://github.com/mattt720/cirro-restock-watcher (public, `main` up to da
 - `targets.json` — final 3 targets: `12k-cool` (variant 58102727246211), `14k-cool` (58103889953155),
   `14k-heat` (58103896637827).
 - `scripts/probe.py` + `.github/workflows/probe.yml` — Phase 1 probe (manual dispatch, keep).
+- `watcher/notify.py` — 6 senders (`discord_alert`/`discord_degraded`/`discord_heartbeat`,
+  `ntfy_alert`/`ntfy_degraded`/`refresh_dms`) through one `_post` helper; env vars read at call
+  time; every sender swallows its own errors and returns bool; failures log only exception class
+  name + HTTP code (urllib exceptions can embed the secret URL — never log `str(exc)`).
+- `watcher/__main__.py` — `--self-test` sends one real Discord alert + urgent ntfy push on a
+  clearly-labelled synthetic target, then schedules an unrefreshed 2-minute DMS (exit 0 all sent /
+  1 any failed). A plain run exits 2 until Phase 4 lands the loop.
+- Test webhook URLs use `discord.example`, not `discord.com` — the SPEC acceptance grep for
+  committed webhook URLs must return nothing.
 
 ## Verify a fresh checkout
 
 ```bash
 pip install -e ".[dev]"
 python -m ruff check .    # ruff not on PATH in Git Bash — use python -m
-python -m pytest -q       # expect 72 passed
+python -m pytest -q       # expect 126 passed
 ```
 
 ## Decisions already made (don't re-litigate)
@@ -49,29 +58,26 @@ python -m pytest -q       # expect 72 passed
   **Do not weaken TLS.** Test parsing via fixtures; verify live behaviour on Actions runners.
 - Git: conventional commits (`<type>: <description>`), no Co-Authored-By attribution.
 
-## Next steps — Phase 3 (SPEC.md lines 141–148)
+## Next steps — Phase 4 (SPEC.md lines 150–157)
 
-Build `watcher/notify.py` + `tests/test_notify.py`, TDD, stdlib-only (`urllib.request`):
+1. `watcher/__main__.py` run loop: load config → load state from `.state/state.json` → fetch each
+   target (isolated try/except) → `decide` → send alerts → daily heartbeat (UTC hour ≥ 7 and
+   `last_heartbeat_date` < today) → update `last_run` → save state → `refresh_dms()`. Exit non-zero
+   only on `ConfigError` or unhandled internal crash. Keep `--self-test` working.
+2. One-time orphan `state` branch bootstrap (command in SPEC.md "Commands").
+3. `.github/workflows/watch.yml`: cron `4-59/5 * * * *` + `workflow_dispatch` (`self_test` bool
+   input); `concurrency: {group: watcher, cancel-in-progress: false}`; `permissions: {contents:
+   write}`; checkout `main` + second checkout `ref: state, path: .state`; setup-python 3.12;
+   run with secrets as env; commit-and-push `.state/state.json` (every run commits — resets the
+   60-day disablement timer).
+4. Verification: two consecutive dispatch runs green, second loads first's state, `git log state`
+   one commit per run, `main` clean. Then the live self-test (Sleep Focus on, Discord breaks
+   through; DMS fires ~2 min later — poll `https://ntfy.sh/$NTFY_TOPIC/json?poll=1&since=10m`).
 
-1. `discord_alert(target)` — POST to `DISCORD_WEBHOOK_URL`: `content` with `@everyone` + IN STOCK,
-   one embed (model/retailer/product URL), `allowed_mentions: {"parse": ["everyone"]}`.
-2. `discord_degraded(target)` (no mention), `discord_heartbeat(summary)` (no mention).
-3. `ntfy_alert(target)` — `Priority: urgent`, `Click:` product URL, rotating_light tag;
-   `ntfy_degraded(target)` default priority; `refresh_dms(delay)` — POST
-   `https://ntfy.sh/{NTFY_TOPIC}/watcher-dead` with `In: {delay}` header (default `3h`, env `DMS_DELAY`).
-4. All senders: read env vars only, swallow+log own errors (channels independent), **never log
-   secret values** (webhook URL, topic).
-5. `--self-test` flag on `python -m watcher`: one real Discord alert, one urgent ntfy push, schedule
-   a 2-minute DMS *without* refreshing it. (Minimal `__main__.py` arg handling now; full run loop is Phase 4.)
-6. Tests mock the HTTP layer: assert exact URLs, payload shapes, headers (`In:`, `Priority:`,
-   `Click:`, `allowed_mentions`), and that no secret appears in any log/print.
-
-**Blocked on user before Phase 3 live verification (code + unit tests are not blocked):**
+**Blocked on user before live verification (code is not blocked):**
 - [ ] Create Discord webhook in a dedicated alerts channel → repo Actions secret `DISCORD_WEBHOOK_URL`
 - [ ] Pick an unguessable ntfy topic (it's a password) → repo Actions secret `NTFY_TOPIC`
 - [ ] iPhone: allow Discord through Sleep Focus, alerts channel → "All Messages"; install ntfy app,
       subscribe to the topic
 
-Then Phase 4 (SPEC.md lines 150–157): full `__main__.py` run loop, `watch.yml` (cron `4-59/5 * * * *`,
-concurrency group, `contents: write`, checkout `state` branch into `.state/`), one-time orphan
-`state` branch bootstrap. Phase 5: README (6 sections), badge, final lint/test pass.
+Then Phase 5: README (6 sections), badge, final lint/test pass, delete this file.
