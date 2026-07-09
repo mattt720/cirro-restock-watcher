@@ -1,8 +1,10 @@
 # Cirro Restock Watcher
 
 Scheduled GitHub Actions watcher that polls Meaco's Shopify `.js` stock endpoints for
-Cirro+ variants every ~5 minutes and alerts via Discord webhook (primary) and ntfy
-(secondary), with an ntfy dead-man's-switch and a daily Discord heartbeat.
+Cirro+ variants on a 5-minute cron and alerts via Discord webhook (primary) and ntfy
+(secondary), with an ntfy dead-man's-switch and a daily Discord heartbeat. GitHub
+throttles the cron hard in practice (observed gaps up to ~4h) — `DMS_DELAY` in
+`watch.yml` must stay wider than the worst real gap between scheduled runs.
 
 ## Commands
 
