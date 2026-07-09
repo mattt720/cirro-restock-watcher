@@ -24,6 +24,8 @@ def fetch_target(target: Target) -> Stock:
         raw = _fetch_raw(target.endpoint)
         stock = derive_stock(raw, target.variant_ids)
     except Exception as exc:
+        # str(exc) is safe here, unlike in notify.py: the only URL it can embed is
+        # target.endpoint, which is world-readable config, never a secret.
         print(f"{target.id}: fetch failed ({type(exc).__name__}: {exc})")
         return "unknown"
     if stock == "unknown":

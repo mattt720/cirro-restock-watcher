@@ -169,7 +169,7 @@ def self_test() -> int:
     results = (
         notify.discord_alert(_SELF_TEST_TARGET),
         notify.ntfy_alert(_SELF_TEST_TARGET),
-        notify.refresh_dms("2m"),
+        notify.refresh_dms("2m", sequence_id=notify.DMS_SELF_TEST_SEQUENCE_ID),
     )
     if all(results):
         print("self-test: all sends succeeded — the watcher-dead message should fire in ~2 minutes")

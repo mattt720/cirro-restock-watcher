@@ -17,6 +17,10 @@ from watcher.config import Target
 TIMEOUT_S = 10
 NTFY_BASE_URL = "https://ntfy.sh"
 DMS_SEQUENCE_ID = "watcher-dead"
+# The self-test's deliberately unrefreshed 2-minute switch needs its own sequence
+# ID: on the shared one, any real run inside those 2 minutes would replace (cancel)
+# it server-side and the self-test would look like a DMS failure.
+DMS_SELF_TEST_SEQUENCE_ID = "watcher-dead-selftest"
 DMS_DEFAULT_DELAY = "3h"
 
 
@@ -75,7 +79,7 @@ def ntfy_degraded(target: Target) -> bool:
     return _ntfy_post("", body, headers, label="ntfy degraded")
 
 
-def refresh_dms(delay: str | None = None) -> bool:
+def refresh_dms(delay: str | None = None, *, sequence_id: str = DMS_SEQUENCE_ID) -> bool:
     """Re-schedule the dead-man's-switch; it only ever fires if runs stop refreshing it.
 
     Publishing to the same sequence ID replaces any pending message server-side.
@@ -90,7 +94,7 @@ def refresh_dms(delay: str | None = None) -> bool:
         f"No watcher run has refreshed this dead-man's-switch within {delay}. "
         "Check the repository's Actions tab."
     )
-    return _ntfy_post(f"/{DMS_SEQUENCE_ID}", body, headers, label="ntfy DMS refresh")
+    return _ntfy_post(f"/{sequence_id}", body, headers, label="ntfy DMS refresh")
 
 
 def _discord_post(payload: dict, label: str) -> bool:

@@ -405,7 +405,9 @@ def test_self_test_sends_alert_push_and_unrefreshed_two_minute_dms(sent):
     assert [request.full_url for request in sent] == [
         WEBHOOK_URL,
         f"https://ntfy.sh/{TOPIC}",
-        f"https://ntfy.sh/{TOPIC}/watcher-dead",
+        # Its own sequence ID: a real run's DMS refresh must not cancel the
+        # deliberately unrefreshed 2-minute self-test switch.
+        f"https://ntfy.sh/{TOPIC}/watcher-dead-selftest",
     ]
     assert sent[2].get_header("In") == "2m"
 
@@ -441,7 +443,7 @@ def test_self_test_reaches_ntfy_and_dms_when_discord_secret_is_malformed(monkeyp
     assert main(["--self-test"]) == 1
     assert [request.full_url for request in requests] == [
         f"https://ntfy.sh/{TOPIC}",
-        f"https://ntfy.sh/{TOPIC}/watcher-dead",
+        f"https://ntfy.sh/{TOPIC}/watcher-dead-selftest",
     ]
     captured = capsys.readouterr()
     assert "mispasted-secret-token-xyz" not in captured.out + captured.err

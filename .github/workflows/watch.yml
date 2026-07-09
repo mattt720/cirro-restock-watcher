@@ -52,6 +52,11 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           COMMIT_MESSAGE_FILE: ${{ github.workspace }}/commit-message.txt
+          # GitHub throttles 5-minute crons hard in practice — observed gaps of
+          # up to ~4h on this repo's first live day. The DMS window must stay
+          # wider than the worst real gap or it fires false "watcher dead"
+          # alerts; the daily Discord heartbeat remains the ≤24h guarantee.
+          DMS_DELAY: "8h"
         run: python -m watcher
 
       - name: Commit state

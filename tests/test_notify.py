@@ -15,6 +15,7 @@ import pytest
 
 from watcher.config import Target
 from watcher.notify import (
+    DMS_SELF_TEST_SEQUENCE_ID,
     discord_alert,
     discord_degraded,
     discord_heartbeat,
@@ -177,6 +178,16 @@ def test_refresh_dms_explicit_delay_beats_env(sent, monkeypatch):
     monkeypatch.setenv("DMS_DELAY", "6h")
     assert refresh_dms("2m") is True
     assert sent[0]["request"].get_header("In") == "2m"
+
+
+def test_refresh_dms_self_test_sequence_id_cannot_collide_with_production(sent):
+    """The self-test's unrefreshed 2-minute DMS must use its own sequence ID —
+    on the shared ID, any real run inside those 2 minutes would silently replace
+    (cancel) it, and the operator would wrongly conclude the DMS is broken."""
+    assert refresh_dms("2m", sequence_id=DMS_SELF_TEST_SEQUENCE_ID) is True
+    request = sent[0]["request"]
+    assert request.full_url == f"https://ntfy.sh/{TOPIC}/{DMS_SELF_TEST_SEQUENCE_ID}"
+    assert DMS_SELF_TEST_SEQUENCE_ID != "watcher-dead"
 
 
 # --- failures return False, never raise, never leak a secret ---
