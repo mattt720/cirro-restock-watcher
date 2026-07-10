@@ -10,11 +10,10 @@ import json
 import urllib.request
 from typing import Literal
 
-from watcher.config import Target
+from watcher.config import USER_AGENT, Target
 
 Stock = Literal["in", "out", "unknown"]
 
-USER_AGENT = "cirro-restock-watcher/1.0 (+https://github.com/mattt720/cirro-restock-watcher)"
 TIMEOUT_S = 10
 MAX_BYTES = 1_000_000
 

@@ -13,7 +13,7 @@ from dataclasses import replace
 
 import pytest
 
-from watcher.config import Target
+from watcher.config import USER_AGENT, Target
 from watcher.notify import (
     DMS_SELF_TEST_SEQUENCE_ID,
     discord_alert,
@@ -188,6 +188,15 @@ def test_refresh_dms_self_test_sequence_id_cannot_collide_with_production(sent):
     request = sent[0]["request"]
     assert request.full_url == f"https://ntfy.sh/{TOPIC}/{DMS_SELF_TEST_SEQUENCE_ID}"
     assert DMS_SELF_TEST_SEQUENCE_ID != "watcher-dead"
+
+
+@pytest.mark.parametrize("send", SENDERS)
+def test_every_send_carries_project_user_agent(send, sent):
+    """Discord sits behind Cloudflare, which 403-bans urllib's default
+    Python-urllib/x.y signature (error 1010) — observed live 2026-07-10 on the
+    first real self-test. Every sender must identify itself explicitly."""
+    assert send() is True
+    assert sent[0]["request"].get_header("User-agent") == USER_AGENT
 
 
 # --- failures return False, never raise, never leak a secret ---

@@ -8,6 +8,11 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+# Sent on every outbound request. Cloudflare (fronting Discord, among others)
+# 403-bans urllib's default Python-urllib/x.y signature (their error 1010), so
+# no request may ever go out without this header.
+USER_AGENT = "cirro-restock-watcher/1.0 (+https://github.com/mattt720/cirro-restock-watcher)"
+
 _REQUIRED_STR_FIELDS = ("id", "retailer", "model", "product_url", "endpoint")
 
 

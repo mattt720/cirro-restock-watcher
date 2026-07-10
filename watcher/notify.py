@@ -12,7 +12,7 @@ import os
 import urllib.error
 import urllib.request
 
-from watcher.config import Target
+from watcher.config import USER_AGENT, Target
 
 TIMEOUT_S = 10
 NTFY_BASE_URL = "https://ntfy.sh"
@@ -121,6 +121,9 @@ def _ntfy_post(path: str, body: str, headers: dict, label: str) -> bool:
 
 
 def _post(url: str, body: bytes, headers: dict, label: str) -> bool:
+    # Cloudflare 403-bans urllib's default User-Agent (see config.USER_AGENT),
+    # so every send identifies itself.
+    headers = {"User-Agent": USER_AGENT, **headers}
     # Request() itself must sit inside the try: a mispasted env value with no URL
     # scheme raises ValueError whose message is the raw secret.
     try:
