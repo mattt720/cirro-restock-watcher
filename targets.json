@@ -22,5 +22,53 @@
     "product_url": "https://meaco.com/products/meaco-cirro-14000-btu-super-quiet-inverter-smart-portable-air-conditioner-heater",
     "endpoint": "https://meaco.com/products/meaco-cirro-14000-btu-super-quiet-inverter-smart-portable-air-conditioner-heater.js",
     "variant_ids": [58103896637827]
+  },
+  {
+    "id": "aircare-12k-cool",
+    "retailer": "Aircare Appliances",
+    "model": "Meaco Cirro 12000 BTU (cooling only)",
+    "product_url": "https://aircareappliances.co.uk/products/meacocool-low-noise-12000-btu-cirro-portable-air-conditioner",
+    "endpoint": "https://aircareappliances.co.uk/products/meacocool-low-noise-12000-btu-cirro-portable-air-conditioner.js",
+    "variant_ids": [52885575500119]
+  },
+  {
+    "id": "aircare-14k-cool",
+    "retailer": "Aircare Appliances",
+    "model": "Meaco Cirro+ 14000 BTU (cooling only)",
+    "product_url": "https://aircareappliances.co.uk/products/meacocool-low-noise-14000-btu-cirro-inverter-portable-air-conditioner",
+    "endpoint": "https://aircareappliances.co.uk/products/meacocool-low-noise-14000-btu-cirro-inverter-portable-air-conditioner.js",
+    "variant_ids": [52886206120279]
+  },
+  {
+    "id": "aircare-14k-heat",
+    "retailer": "Aircare Appliances",
+    "model": "Meaco Cirro+ 14000 BTU (cooling + heating)",
+    "product_url": "https://aircareappliances.co.uk/products/meacocool-low-noise-14000-btu-cirro-ch-inverter-portable-air-conditioner",
+    "endpoint": "https://aircareappliances.co.uk/products/meacocool-low-noise-14000-btu-cirro-ch-inverter-portable-air-conditioner.js",
+    "variant_ids": [52886231679319]
+  },
+  {
+    "id": "airconcentre-12k-cool",
+    "retailer": "Air Con Centre",
+    "model": "Meaco Cirro 12000 BTU (cooling only)",
+    "product_url": "https://www.airconcentre.co.uk/products/meaco-cirro-12000-btu-super-quiet-inverter-smart-portable-air-conditioner-cooling-only-cirro12000pro",
+    "endpoint": "https://www.airconcentre.co.uk/products/meaco-cirro-12000-btu-super-quiet-inverter-smart-portable-air-conditioner-cooling-only-cirro12000pro.js",
+    "variant_ids": [58075660222838]
+  },
+  {
+    "id": "airconcentre-14k-cool",
+    "retailer": "Air Con Centre",
+    "model": "Meaco Cirro+ 14000 BTU (cooling only)",
+    "product_url": "https://www.airconcentre.co.uk/products/meaco-cirro-14000-btu-super-quiet-inverter-smart-portable-air-conditioner-cooling-only-cirro14000pro",
+    "endpoint": "https://www.airconcentre.co.uk/products/meaco-cirro-14000-btu-super-quiet-inverter-smart-portable-air-conditioner-cooling-only-cirro14000pro.js",
+    "variant_ids": [58075660779894]
+  },
+  {
+    "id": "airconcentre-14k-heat",
+    "retailer": "Air Con Centre",
+    "model": "Meaco Cirro+ 14000 BTU (cooling + heating)",
+    "product_url": "https://www.airconcentre.co.uk/products/meaco-cirro-14000-btu-super-quiet-inverter-smart-portable-air-conditioner-and-heater-cirro14000chpro",
+    "endpoint": "https://www.airconcentre.co.uk/products/meaco-cirro-14000-btu-super-quiet-inverter-smart-portable-air-conditioner-and-heater-cirro14000chpro.js",
+    "variant_ids": [58075662778742]
   }
 ]

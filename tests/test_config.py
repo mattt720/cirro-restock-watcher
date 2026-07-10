@@ -28,13 +28,26 @@ def write_config(tmp_path, data):
     return path
 
 
+# Every store verified Shopify with public /products/<handle>.js (probed 2026-07-10,
+# all variants showing available=false while the range was genuinely sold out).
+STORE_BY_RETAILER = {
+    "Meaco direct": "https://meaco.com/products/",
+    "Aircare Appliances": "https://aircareappliances.co.uk/products/",
+    "Air Con Centre": "https://www.airconcentre.co.uk/products/",
+}
+
+
 def test_repo_targets_json_is_valid():
     targets = load_targets(REPO_TARGETS)
-    assert [target.id for target in targets] == ["12k-cool", "14k-cool", "14k-heat"]
+    assert [target.id for target in targets] == [
+        "12k-cool", "14k-cool", "14k-heat",
+        "aircare-12k-cool", "aircare-14k-cool", "aircare-14k-heat",
+        "airconcentre-12k-cool", "airconcentre-14k-cool", "airconcentre-14k-heat",
+    ]
     for target in targets:
         assert isinstance(target, Target)
-        assert target.endpoint.startswith("https://meaco.com/products/")
-        assert target.endpoint.endswith(".js")
+        assert target.endpoint.startswith(STORE_BY_RETAILER[target.retailer])
+        assert target.endpoint == target.product_url + ".js"
         assert all(isinstance(variant_id, int) for variant_id in target.variant_ids)
         assert len(target.variant_ids) == 1
 

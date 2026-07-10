@@ -5,8 +5,9 @@
 ## What & why
 
 Meaco's Cirro and Cirro+ portable air conditioners are sold out UK-wide, restocks are
-unannounced, and units sell out in hours. This watcher polls Meaco's public Shopify stock
-endpoints on a 5-minute GitHub Actions cron (in practice GitHub throttles this — see
+unannounced, and units sell out in hours. This watcher polls the public Shopify stock
+endpoints of three UK stockists — Meaco direct, Aircare Appliances, and Air Con
+Centre — on a 5-minute GitHub Actions cron (in practice GitHub throttles this — see
 Limitations) and fires a sleep-breaking Discord alert (plus an ntfy push) within one run
 of any watched variant coming back in stock. It is built to run unattended for months,
 so it also detects and reports its own death.
@@ -144,12 +145,14 @@ this:
   instead of relying on `schedule`.
 - **Alert-only.** No auto-purchase, no cart automation, no price tracking. You still
   have to wake up and click.
-- **Meaco direct only.** Retailers without a clean public stock endpoint (John Lewis,
-  AO) were dropped by design; only Shopify storefronts with the `.js` product endpoint
-  can be added.
-- **Bot challenges are an accepted risk.** If Meaco later blocks datacenter IPs,
-  fetches degrade to `unknown` and a degraded alert fires within ~1 hour — states are
-  never falsely `in`/`out`.
+- **Shopify stockists only.** Meaco direct, Aircare Appliances, and Air Con Centre all
+  expose the public `.js` product endpoint and are watched. John Lewis, Currys, AO,
+  and Amazon sit behind bot protection with no clean public stock endpoint, and
+  Argos shows stock only per postcode — all dropped by design; only Shopify
+  storefronts can be added.
+- **Bot challenges are an accepted risk.** If a stockist later blocks datacenter IPs,
+  its fetches degrade to `unknown` and a degraded alert fires within ~1 hour — states
+  are never falsely `in`/`out`.
 - **The `state` branch accumulates commits** — one per run, by design (each resets the
   60-day timer). Squash it manually if the history bothers you; `main` stays clean.
 

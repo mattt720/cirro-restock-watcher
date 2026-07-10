@@ -1,11 +1,14 @@
-"""Phase 1 empirical probe (SPEC.md): can GitHub runners read Meaco's Shopify endpoints?
+"""Empirical endpoint probe (SPEC.md Phase 1, now targets.json-driven): can GitHub
+runners read every watched store's Shopify endpoint?
 
-Fetches each candidate /products/{handle}.js with the production User-Agent, prints the
-evidence (HTTP status, product title, per-variant id/title/available), and saves each raw
-JSON payload to --out (uploaded as workflow artifacts; they become tests/fixtures/).
-Exits non-zero if any candidate fetch fails, so the probe workflow goes red.
+Fetches each targets.json endpoint with the production User-Agent, prints the evidence
+(HTTP status, product title, per-variant id/title/available), and saves each raw JSON
+payload to --out (uploaded as workflow artifacts; they become tests/fixtures/).
+Exits non-zero if any fetch fails, so the probe workflow goes red.
 
-Run locally:  python scripts/probe.py --out probe-output
+Run on Actions (the only verdict that counts — runner egress IPs differ from home):
+the `probe` workflow via workflow_dispatch. Run locally: python scripts/probe.py
+(meaco.com fails TLS verification on some stale local trust stores; Actions verifies).
 """
 
 import argparse
@@ -14,27 +17,10 @@ import sys
 import urllib.request
 from pathlib import Path
 
-STORE = "https://meaco.com"
 USER_AGENT = "cirro-restock-watcher/1.0 (+https://github.com/mattt720/cirro-restock-watcher)"
 TIMEOUT_S = 10
 MAX_BYTES = 1_000_000
-
-# (target_id, product handle on meaco.com) — meaco.online carries no Cirro products
-# (verified 2026-07-05: distinct storefront, dehumidifiers/fans only) and is excluded.
-CANDIDATES = [
-    (
-        "12k-cool",
-        "meaco-cirro-12000-btu-super-quiet-smart-portable-air-conditioner",
-    ),
-    (
-        "14k-cool",
-        "meaco-cirro-14000-btu-super-quiet-inverter-smart-portable-air-conditioner",
-    ),
-    (
-        "14k-heat",
-        "meaco-cirro-14000-btu-super-quiet-inverter-smart-portable-air-conditioner-heater",
-    ),
-]
+TARGETS_PATH = Path(__file__).parents[1] / "targets.json"
 
 
 def fetch(url: str) -> bytes:
@@ -53,9 +39,8 @@ def print_egress_ip() -> None:
         print(f"runner egress IP: lookup failed ({exc})")
 
 
-def probe_candidate(target_id: str, handle: str, out_dir: Path) -> bool:
-    url = f"{STORE}/products/{handle}.js"
-    print(f"\n== {target_id} ==\n   {url}")
+def probe_target(target_id: str, retailer: str, url: str, out_dir: Path) -> bool:
+    print(f"\n== {target_id} ({retailer}) ==\n   {url}")
     try:
         raw = fetch(url)
         product = json.loads(raw)
@@ -80,8 +65,11 @@ def main() -> int:
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    targets = json.loads(TARGETS_PATH.read_text(encoding="utf-8"))
     print_egress_ip()
-    results = {tid: probe_candidate(tid, handle, out_dir) for tid, handle in CANDIDATES}
+    results = {
+        t["id"]: probe_target(t["id"], t["retailer"], t["endpoint"], out_dir) for t in targets
+    }
 
     print("\n== summary ==")
     for target_id, ok in results.items():
