@@ -25,9 +25,18 @@ DMS_DEFAULT_DELAY = "3h"
 
 
 def discord_alert(target: Target) -> bool:
-    """Sleep-breaking restock alert: @everyone mention plus a clickable embed."""
+    """Sleep-breaking restock alert: @everyone mention plus a clickable embed.
+    When DISCORD_MENTION_USER_ID is set, a direct user mention rides along —
+    it pings even under Discord's "Suppress @everyone and @here" setting."""
+    user_id = _personal_mention_id()
+    if user_id:
+        mentions = f"@everyone <@{user_id}>"
+        allowed = {"parse": ["everyone"], "users": [user_id]}
+    else:
+        mentions = "@everyone"
+        allowed = {"parse": ["everyone"]}
     payload = {
-        "content": f"@everyone IN STOCK: {target.model}",
+        "content": f"{mentions} IN STOCK: {target.model}",
         "embeds": [
             {
                 "title": target.model,
@@ -35,9 +44,23 @@ def discord_alert(target: Target) -> bool:
                 "description": f"Back in stock at {target.retailer} — go!",
             }
         ],
-        "allowed_mentions": {"parse": ["everyone"]},
+        "allowed_mentions": allowed,
     }
     return _discord_post(payload, label="discord alert")
+
+
+def _personal_mention_id() -> str | None:
+    """Restock alerts only — routine messages pinging personally would rebuild
+    the very habituation this exists to avoid. A malformed value is dropped, not
+    sent: Discord 400-rejects a payload whose allowed_mentions ID isn't numeric,
+    which would kill the whole alert."""
+    user_id = os.environ.get("DISCORD_MENTION_USER_ID", "")
+    if not user_id:
+        return None
+    if not (user_id.isascii() and user_id.isdigit()):
+        print("discord alert: DISCORD_MENTION_USER_ID is not a numeric user ID; ignoring")
+        return None
+    return user_id
 
 
 def discord_degraded(target: Target) -> bool:

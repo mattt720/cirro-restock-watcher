@@ -23,7 +23,8 @@ fetch each target in targets.json ──── GET /products/<handle>.js (Shopif
 three-valued state machine: in / out / unknown          watcher/state.py (pure)
   │   a failed or ambiguous fetch is "unknown" — never "out"
   │
-  ├─ restock (in, was not in) ──▶ Discord @everyone + ntfy urgent   ≤ 1/hour/target
+  ├─ restock (in, was not in) ──▶ Discord @everyone (+ personal @) + ntfy urgent
+  │     repeated 3× a minute apart — unmissable; ≤ 1 restock event/hour/target
   ├─ 12 consecutive failures ──▶ degraded-target alert              ≤ 1/24h/target
   │
   ▼
@@ -50,7 +51,11 @@ others.
    alerts. Rotate by picking a new name.
 4. **Actions secrets.** In the repo: *Settings → Secrets and variables → Actions* →
    add `DISCORD_WEBHOOK_URL` and `NTFY_TOPIC`. Until both exist, runs stay green but
-   log `not set; skipping` for each send.
+   log `not set; skipping` for each send. Optionally add `DISCORD_MENTION_USER_ID` —
+   your *numeric* Discord user ID (Discord *Settings → Advanced → Developer Mode*
+   on, then right-click your own name → *Copy User ID*) — to get a personal
+   @mention on restock alerts; unlike @everyone, it pings even under Discord's
+   "Suppress @everyone and @here" setting.
 5. **iPhone.** Allow Discord through your Sleep/DND Focus
    (*Settings → Focus → Sleep → Apps → Allow*), and set the alerts channel to
    **"All Messages"** in Discord's notification settings — otherwise the `@everyone`
@@ -115,8 +120,10 @@ this:
   makes "no runs for 3 hours" itself the trigger.
 - **Bias toward alerting.** First observation of an in-stock target alerts; corrupt
   state resets to first-run and may re-alert; stock flicker re-alerts (capped at one
-  per hour per target). A duplicate ping costs a glance; a missed restock defeats the
-  entire project.
+  per hour per target); every restock alert repeats twice more at one-minute spacing
+  (a single 4am ping is missable, and the repeats double as retries after a failed
+  send). A duplicate ping costs a glance; a missed restock defeats the entire
+  project.
 - **Stdlib-only runtime.** `urllib.request`, `json`, `ssl`, `datetime` — no install
   step inside a job that runs every 5 minutes, no supply chain to audit, and the whole
   runtime fits in four small modules.

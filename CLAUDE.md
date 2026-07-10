@@ -23,8 +23,9 @@ python -m watcher --self-test  # sends real notifications + schedules a 2-minute
 - **A failed or ambiguous fetch is `unknown`, never `out`.** Timeout, non-200, redirect to
   HTML, malformed JSON, missing fields — all record `unknown`. `unknown` is never a stock
   change and never fires a restock alert by itself.
-- **Secrets live only in GitHub Actions secrets** (`NTFY_TOPIC`, `DISCORD_WEBHOOK_URL`),
-  injected as env vars. Never hardcode, never log them.
+- **Secrets live only in GitHub Actions secrets** (`NTFY_TOPIC`, `DISCORD_WEBHOOK_URL`,
+  optional `DISCORD_MENTION_USER_ID`), injected as env vars. Never hardcode, never
+  log them.
 - **Run state lives on the `state` branch, never on `main`.** Every run commits
   `state.json` there (this also resets GitHub's 60-day scheduled-workflow disablement
   timer).

@@ -44,6 +44,8 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          # Optional: numeric Discord user ID to @mention personally on restock.
+          DISCORD_MENTION_USER_ID: ${{ secrets.DISCORD_MENTION_USER_ID }}
         run: python -m watcher --self-test
 
       - name: Run watcher
@@ -51,6 +53,8 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          # Optional: numeric Discord user ID to @mention personally on restock.
+          DISCORD_MENTION_USER_ID: ${{ secrets.DISCORD_MENTION_USER_ID }}
           COMMIT_MESSAGE_FILE: ${{ github.workspace }}/commit-message.txt
           # GitHub throttles 5-minute crons hard in practice — observed gaps of
           # up to ~4h on this repo's first live day. The DMS window must stay

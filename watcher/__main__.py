@@ -8,6 +8,7 @@ is logged by the sender and must never fail the run.
 
 import os
 import sys
+import time
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -18,6 +19,10 @@ from watcher.state import decide, initial_state, load_state, save_state, target_
 
 STATE_PATH = Path(".state/state.json")
 HEARTBEAT_UTC_HOUR = 7
+# A single 4am ping is missable; a restock repeats on both channels, spaced out
+# so the phone sounds distinct notifications rather than collapsing a burst.
+ALERT_FOLLOWUP_ROUNDS = 2
+ALERT_FOLLOWUP_SPACING_S = 60
 
 _REPO_URL = "https://github.com/mattt720/cirro-restock-watcher"
 
@@ -39,6 +44,7 @@ class _TargetResult:
     transition: str | None
     alerted: bool
     degraded: bool
+    restock: bool
 
 
 def run() -> int:
@@ -65,7 +71,23 @@ def run() -> int:
     save_state(STATE_PATH, new_state)
     _write_commit_message(results)
     notify.refresh_dms()
+    restocked = [t for t, r in zip(targets, results, strict=True) if r.restock]
+    _send_alert_followups(restocked)
     return 0
+
+
+def _send_alert_followups(restocked: list[Target]) -> None:
+    """Repeat every restock alert so it cannot be slept through. Runs strictly
+    after the state commit and DMS refresh, so the sleeps never delay either;
+    keyed on the restock decision, not send success, so the rounds double as
+    retries when the initial sends failed."""
+    if not restocked:
+        return
+    for _ in range(ALERT_FOLLOWUP_ROUNDS):
+        time.sleep(ALERT_FOLLOWUP_SPACING_S)
+        for target in restocked:
+            notify.discord_alert(target)
+            notify.ntfy_alert(target)
 
 
 def _process_target(target: Target, previous: dict, now: datetime) -> _TargetResult:
@@ -88,7 +110,7 @@ def _process_target(target: Target, previous: dict, now: datetime) -> _TargetRes
     except Exception as exc:
         # Class name only: exception text can embed request URLs.
         print(f"{target.id}: unexpected error ({type(exc).__name__}); state carried forward")
-        return _TargetResult(target.id, previous, None, False, False)
+        return _TargetResult(target.id, previous, None, False, False, False)
     line = f"{target.id}: {observation}"
     if decision.transition:
         line += f" {decision.transition}"
@@ -97,7 +119,10 @@ def _process_target(target: Target, previous: dict, now: datetime) -> _TargetRes
     if degraded:
         line += " degraded-alert-sent"
     print(line)
-    return _TargetResult(target.id, decision.target_state, decision.transition, alerted, degraded)
+    return _TargetResult(
+        target.id, decision.target_state, decision.transition, alerted, degraded,
+        decision.restock_alert,
+    )
 
 
 def _heartbeat_date(state: dict, results: list[_TargetResult], now: datetime) -> str | None:

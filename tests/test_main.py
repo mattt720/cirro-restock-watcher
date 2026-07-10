@@ -2,11 +2,13 @@
 
 Run-loop invariants under test (SPEC.md Phase 4): one isolated fetch+decide per
 target, alerts on both channels, daily heartbeat at the first run after 07:00 UTC,
-state saved with an updated last_run every run, the DMS refreshed as the final
-step of a successful run only, and no secret value in anything the run prints.
+state saved with an updated last_run every run, the DMS refreshed on a successful
+run only, restock follow-up rounds strictly after state and DMS so they can never
+delay either, and no secret value in anything the run prints.
 """
 
 import json
+import time
 import urllib.error
 import urllib.request
 from datetime import UTC, datetime
@@ -110,7 +112,9 @@ def loop(monkeypatch, tmp_path, sent):
     monkeypatch.setattr("watcher.__main__._utcnow", lambda: FIXED_NOW)
     stocks = {}
     monkeypatch.setattr(shopify, "fetch_target", lambda target: stocks[target.id])
-    return SimpleNamespace(tmp_path=tmp_path, stocks=stocks, requests=sent)
+    sleeps = []
+    monkeypatch.setattr(time, "sleep", lambda seconds: sleeps.append(seconds))
+    return SimpleNamespace(tmp_path=tmp_path, stocks=stocks, requests=sent, sleeps=sleeps)
 
 
 def urls(requests):
@@ -126,6 +130,7 @@ def test_quiet_run_refreshes_dms_only_and_saves_last_run(loop, capsys):
     loop.stocks.update({"12k-cool": "out", "14k-heat": "out"})
     assert main([]) == 0
     assert urls(loop.requests) == [DMS_URL]
+    assert loop.sleeps == []
     out = capsys.readouterr().out
     assert f"last_run={PREVIOUS_RUN}" in out
     assert "12k-cool: out" in out
@@ -138,12 +143,20 @@ def test_quiet_run_refreshes_dms_only_and_saves_last_run(loop, capsys):
 # --- run loop: restock alerts ---
 
 
-def test_restock_alerts_both_channels_then_refreshes_dms_last(loop, capsys):
+def test_restock_alerts_repeat_after_state_and_dms(loop, capsys):
+    """One restock = three alert rounds a minute apart on both channels (a single
+    4am ping is missable), but state save and the DMS refresh come first — the
+    follow-up sleeps must never delay the audit trail or the liveness signal."""
     write_targets(loop.tmp_path)
     write_state(loop.tmp_path, {"12k-cool": target_state(), "14k-heat": target_state()})
     loop.stocks.update({"12k-cool": "out", "14k-heat": "in"})
     assert main([]) == 0
-    assert urls(loop.requests) == [WEBHOOK_URL, NTFY_URL, DMS_URL]
+    assert urls(loop.requests) == [
+        WEBHOOK_URL, NTFY_URL, DMS_URL,  # initial pass ends with the DMS refresh
+        WEBHOOK_URL, NTFY_URL,  # follow-up round 1
+        WEBHOOK_URL, NTFY_URL,  # follow-up round 2
+    ]
+    assert loop.sleeps == [60, 60]
     discord_payload = json.loads(loop.requests[0].data)
     assert "@everyone" in discord_payload["content"]
     assert discord_payload["embeds"][0]["title"] == "Example 14k-heat"
@@ -159,8 +172,13 @@ def test_first_run_bootstraps_state_alerts_and_heartbeats(loop):
     write_targets(loop.tmp_path)  # no .state directory at all
     loop.stocks.update({"12k-cool": "in", "14k-heat": "out"})
     assert main([]) == 0
-    # first observation "in" alerts (null counts as not-in), first run heartbeats
-    assert urls(loop.requests) == [WEBHOOK_URL, NTFY_URL, WEBHOOK_URL, DMS_URL]
+    # first observation "in" alerts (null counts as not-in), first run heartbeats,
+    # then the restock follow-up rounds
+    assert urls(loop.requests) == [
+        WEBHOOK_URL, NTFY_URL, WEBHOOK_URL, DMS_URL,
+        WEBHOOK_URL, NTFY_URL,
+        WEBHOOK_URL, NTFY_URL,
+    ]
     heartbeat = json.loads(loop.requests[2].data)
     assert "@everyone" not in heartbeat["content"]
     state = saved_state(loop.tmp_path)
@@ -219,7 +237,9 @@ def test_twelfth_consecutive_failure_sends_degraded_alerts(loop, monkeypatch, ca
     message_file = loop.tmp_path / "commit-message.txt"
     monkeypatch.setenv("COMMIT_MESSAGE_FILE", str(message_file))
     assert main([]) == 0
+    # degraded is a warning, not a restock: exactly one round, no follow-ups
     assert urls(loop.requests) == [WEBHOOK_URL, NTFY_URL, DMS_URL]
+    assert loop.sleeps == []
     discord_payload = json.loads(loop.requests[0].data)
     assert "12k-cool" in discord_payload["content"]
     assert "@everyone" not in discord_payload["content"]
@@ -246,7 +266,12 @@ def test_restock_still_reaches_ntfy_when_discord_is_down(loop, monkeypatch, caps
 
     monkeypatch.setattr(urllib.request, "urlopen", discord_down)
     assert main([]) == 0
-    assert urls(loop.requests) == [WEBHOOK_URL, NTFY_URL, DMS_URL]
+    # follow-up rounds still fire (and keep trying Discord — they double as retries)
+    assert urls(loop.requests) == [
+        WEBHOOK_URL, NTFY_URL, DMS_URL,
+        WEBHOOK_URL, NTFY_URL,
+        WEBHOOK_URL, NTFY_URL,
+    ]
     assert "14k-heat: in out→in alert-sent" in capsys.readouterr().out
     state = saved_state(loop.tmp_path)["targets"]["14k-heat"]
     assert state["last_alert_ts"] == FIXED_NOW.isoformat()
@@ -348,6 +373,7 @@ def test_one_crashing_target_does_not_stop_the_rest(loop, monkeypatch, capsys):
     monkeypatch.setattr(shopify, "fetch_target", explode)
     assert main([]) == 0
     assert urls(loop.requests) == [DMS_URL]
+    assert loop.sleeps == []
     out = capsys.readouterr().out
     assert "14k-heat: out" in out
     assert WEBHOOK_URL not in out  # crash messages can embed URLs; log class name only

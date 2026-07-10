@@ -78,6 +78,7 @@ def sent(monkeypatch):
     monkeypatch.setenv("DISCORD_WEBHOOK_URL", WEBHOOK_URL)
     monkeypatch.setenv("NTFY_TOPIC", TOPIC)
     monkeypatch.delenv("DMS_DELAY", raising=False)
+    monkeypatch.delenv("DISCORD_MENTION_USER_ID", raising=False)
     calls = []
 
     def fake_urlopen(request, timeout=None):
@@ -107,6 +108,52 @@ def test_discord_alert_mentions_everyone_with_embed(sent):
     assert embed["title"] == TARGET.model
     assert embed["url"] == TARGET.product_url
     assert TARGET.retailer in embed["description"]
+
+
+def test_discord_alert_adds_personal_mention_when_configured(sent, monkeypatch):
+    """A direct user mention pings even when the user has enabled Discord's
+    "Suppress @everyone and @here" — a second independent path to a loud alert."""
+    monkeypatch.setenv("DISCORD_MENTION_USER_ID", "123456789012345678")
+    assert discord_alert(TARGET) is True
+    payload = json.loads(sent[0]["request"].data)
+    assert "<@123456789012345678>" in payload["content"]
+    assert "@everyone" in payload["content"]
+    assert payload["allowed_mentions"] == {
+        "parse": ["everyone"],
+        "users": ["123456789012345678"],
+    }
+
+
+def test_discord_alert_ignores_malformed_mention_id(sent, monkeypatch, capsys):
+    """A mistyped ID (e.g. a @username instead of the numeric ID) must degrade to
+    plain @everyone: sending it would make Discord 400-reject the entire alert."""
+    monkeypatch.setenv("DISCORD_MENTION_USER_ID", "@matt720")
+    assert discord_alert(TARGET) is True
+    payload = json.loads(sent[0]["request"].data)
+    assert "<@" not in payload["content"]
+    assert payload["allowed_mentions"] == {"parse": ["everyone"]}
+    assert "DISCORD_MENTION_USER_ID" in capsys.readouterr().out
+
+
+def test_discord_alert_treats_empty_mention_id_as_unset(sent, monkeypatch, capsys):
+    """Actions sets a referenced-but-undefined secret to "" — skip silently."""
+    monkeypatch.setenv("DISCORD_MENTION_USER_ID", "")
+    assert discord_alert(TARGET) is True
+    payload = json.loads(sent[0]["request"].data)
+    assert "<@" not in payload["content"]
+    assert "DISCORD_MENTION_USER_ID" not in capsys.readouterr().out
+
+
+def test_personal_mention_never_reaches_routine_messages(sent, monkeypatch):
+    """Only the restock alert may ping the user personally — a daily heartbeat or
+    degraded warning that pings would rebuild the habituation this guards against."""
+    monkeypatch.setenv("DISCORD_MENTION_USER_ID", "123456789012345678")
+    assert discord_degraded(TARGET) is True
+    assert discord_heartbeat("all targets: out") is True
+    for call in sent:
+        payload = json.loads(call["request"].data)
+        assert "<@" not in payload["content"]
+        assert "users" not in payload["allowed_mentions"]
 
 
 def test_discord_degraded_names_target_without_mention(sent):
