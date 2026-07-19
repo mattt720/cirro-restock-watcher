@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "last_run": "2026-07-18T23:07:14.265280+00:00",
+  "last_run": "2026-07-19T00:06:30.943944+00:00",
   "last_heartbeat_date": "2026-07-18",
   "targets": {
     "12k-cool": {
-      "state": "unknown",
+      "state": "out",
       "last_known_stock_state": "out",
-      "consecutive_failures": 1,
+      "consecutive_failures": 0,
       "last_alert_ts": null,
       "degraded_alerted_ts": null
     },
