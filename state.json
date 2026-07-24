@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "last_run": "2026-07-24T09:34:33.378721+00:00",
+  "last_run": "2026-07-24T11:20:48.753914+00:00",
   "last_heartbeat_date": "2026-07-24",
   "targets": {
     "12k-cool": {
@@ -39,9 +39,9 @@
       "degraded_alerted_ts": null
     },
     "aircare-14k-heat": {
-      "state": "unknown",
+      "state": "out",
       "last_known_stock_state": "out",
-      "consecutive_failures": 1,
+      "consecutive_failures": 0,
       "last_alert_ts": "2026-07-13T15:49:30.472364+00:00",
       "degraded_alerted_ts": null
     },
@@ -53,16 +53,16 @@
       "degraded_alerted_ts": null
     },
     "airconcentre-14k-cool": {
-      "state": "unknown",
+      "state": "out",
       "last_known_stock_state": "out",
-      "consecutive_failures": 1,
+      "consecutive_failures": 0,
       "last_alert_ts": null,
       "degraded_alerted_ts": null
     },
     "airconcentre-14k-heat": {
-      "state": "unknown",
+      "state": "out",
       "last_known_stock_state": "out",
-      "consecutive_failures": 1,
+      "consecutive_failures": 0,
       "last_alert_ts": "2026-07-13T10:40:28.395473+00:00",
       "degraded_alerted_ts": null
     }
