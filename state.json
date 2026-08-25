@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "last_run": "2026-08-25T06:20:46.354200+00:00",
-  "last_heartbeat_date": "2026-08-24",
+  "last_run": "2026-08-25T07:14:35.616785+00:00",
+  "last_heartbeat_date": "2026-08-25",
   "targets": {
     "12k-cool": {
       "state": "out",
@@ -53,9 +53,9 @@
       "degraded_alerted_ts": null
     },
     "airconcentre-14k-cool": {
-      "state": "unknown",
+      "state": "out",
       "last_known_stock_state": "out",
-      "consecutive_failures": 1,
+      "consecutive_failures": 0,
       "last_alert_ts": null,
       "degraded_alerted_ts": null
     },
