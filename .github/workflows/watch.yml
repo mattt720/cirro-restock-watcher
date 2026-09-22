@@ -4,9 +4,12 @@
 # loudly, never silently skip.
 name: watch
 
+# RETIRED 2026-09-22: the unit was bought, so the cron below is switched off and
+# no scheduled runs happen. Nothing else is removed — re-arm the watcher by
+# uncommenting the two `schedule` lines, or run it on demand from the Actions tab.
 "on":
-  schedule:
-    - cron: "4-59/5 * * * *" # every 5 min, offset from the :00/:05 scheduler spikes
+  # schedule:
+  #   - cron: "4-59/5 * * * *" # every 5 min, offset from the :00/:05 scheduler spikes
   workflow_dispatch:
     inputs:
       self_test:
